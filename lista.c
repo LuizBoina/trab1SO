@@ -21,3 +21,22 @@ void imprimeLista(Lista* comandos){
         comandos = comandos->prox;
     }
 }
+
+int tamLista(Lista* comandos){
+    int tam;
+    for(tam = 0;comandos != NULL; comandos = comandos->prox, tam++);
+}
+
+char* pegaPrimeiro(Lista* comandos){
+    return comandos->comando;
+}
+
+Lista* removePrimeiro(Lista* comandos){
+    if(comandos == NULL){
+        return NULL;
+    }
+    Lista* removido = comandos;
+    comandos = comandos->prox;
+    free(removido);
+    return comandos;
+}

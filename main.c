@@ -6,6 +6,7 @@ int main() {
     while(1){
         comandos = leLinha();
         imprimeLista(comandos);
+        //criaProcessos(comandos);
     }
     return 0;
 }
