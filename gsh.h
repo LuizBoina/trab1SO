@@ -1,7 +1,8 @@
+#include "lista.h"
 #ifndef GSH_H
 #define GSH_H
 
 void imprimePrompt();
-void getComandos(char* comandos);
+Lista* leLinha();
 
 #endif /* GSH_H */

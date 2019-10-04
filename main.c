@@ -1,10 +1,11 @@
 #include "gsh.h"
-int main() {
-    char comandos[500];
-    Grupo* grupos;
-    while(1){
-        getComandos(comandos);
+#include "lista.h"
 
+int main() {
+    Lista* comandos;
+    while(1){
+        comandos = leLinha();
+        imprimeLista(comandos);
     }
     return 0;
 }
