@@ -4,6 +4,7 @@
 #include <sys/wait.h> 
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "gsh.h"
 #include <string.h>
 
@@ -16,18 +17,19 @@ Lista* leLinha(){
     char linha[400];
     imprimePrompt();
     scanf("%[^\n]%*c", linha);
-    char delim[3] = " # ";
-    char* comando = strtok(linha, delim);
-    while(comando != NULL){
+    char *comando = strtok(linha, "#");
+    while(comando!= NULL){
         comandos = insereLista(comandos, comando);
-        comando = strtok(NULL, delim);
+        comando = strtok(NULL, "#");
     }
     return comandos;
 }
 
 int criaProcessos(Lista* comandos){
     if(tamLista(comandos) == 1){
+        char* comando = pegaPrimeiro(comandos);
         criaProcesso(comando, FOREGROUND);
+        removePrimeiro(comandos);
     }
     else{
         while(comandos != NULL){
@@ -38,7 +40,7 @@ int criaProcessos(Lista* comandos){
     }
 }
 
-criaProcesso(comando, tipo){
+void criaProcesso(char* comando, int tipo){ //checar se necessita de retorno
     char* args[10];
     int i = 0;
     char* split = strtok(comando, " ");
@@ -46,20 +48,23 @@ criaProcesso(comando, tipo){
         args[i++] = split;
         split = strtok(NULL, " ");
     }
-    args[i+1] = NULL;
-    pid_t pid;
+    args[i] = NULL;
     int moeda = rand() % 2; //se moeda = 0 não cria ghost caso contrário, cria
+    pid_t pid, pid_ghost;
     if((pid = fork()) < 0)
-        printf("erro fork() comando:%s", comando);
+        printf("erro fork() comando: %s", comando);
     if(pid == 0){
         
-        execvp(args[0], args);
+        if(execvp(args[0], args) == -1)
+            printf("erro ao executar o comando: %s", comando);
     }
     else{
-        if(FOREGROUND){ //travar o terminal até o filho morrer ou ser suspenso
+        if(tipo == FOREGROUND){ //travar o terminal até o filho morrer ou ser suspenso
             int status;
-            wait(pid, &status, WUNTRACED);
+            waitpid(pid, &status, WUNTRACED);
+        }
+        else{
+
         }
     }
-    if()
 }

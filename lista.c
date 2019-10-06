@@ -25,6 +25,7 @@ void imprimeLista(Lista* comandos){
 int tamLista(Lista* comandos){
     int tam;
     for(tam = 0;comandos != NULL; comandos = comandos->prox, tam++);
+    return tam;
 }
 
 char* pegaPrimeiro(Lista* comandos){
