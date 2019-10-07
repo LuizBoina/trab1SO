@@ -4,8 +4,9 @@
 int main() {
     Lista* comandos;
     while(1){
+        sleep(1);
         comandos = leLinha();
-        imprimeLista(comandos);
+        //imprimeLista(comandos);
         criaProcessos(comandos);
     }
     return 0;
