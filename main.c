@@ -1,9 +1,12 @@
 #include "gsh.h"
 #include "lista.h"
+#include <stdio.h>
 
 int main() {
     Lista* comandos;
-    while(1){
+    signal(SIGNINT, trata_SIGINT);
+    signal(SIGTSTP, trata_SIGTSTP);
+    while(1){ //tratar entrads (somente enter e comandos inexistentes)
         sleep(1);
         comandos = leLinha();
         //imprimeLista(comandos);

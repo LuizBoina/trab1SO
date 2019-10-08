@@ -28,7 +28,7 @@ Lista* leLinha(){
 
 int criaProcessos(Lista* comandos){
     int cont = 0;
-    pid_t groupid;
+    pid_t *groupid; //vetor com Ids dos grupos 
     
     if(tamLista(comandos) == 1){
         char* comando = pegaPrimeiro(comandos);
@@ -72,23 +72,32 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){ //checar se necessita 
             setpgid(getpid(), groupid);
             printf("MEU PID = %d, PID DO GRUPO = %d\n", getpid(), getpgrp());
         }
-        if(execvp(args[0], args) == -1)
-            printf("erro ao executar o comando: %s", comando);
         if(moeda == 1) {
             pid_ghost = fork();
+            printf("ghost criado\n");
         }
+        if(execvp(args[0], args) == -1)
+            printf("erro ao executar o comando: %s", comando);
     }
     else{
         if(tipo == FOREGROUND){ //travar o terminal até o filho morrer ou ser suspenso
             int status;
             waitpid(pid, &status, WUNTRACED);
-        }
-        else{
+            if(status){
 
+            }
         }
     }
     if(groupid == -1) {
         groupid = pid;
     }
     return groupid;
+}
+
+void trata_SIGINT(int signum){ //se tiver descendentes vivo pergunta se realmente quer fechar, se nao fecha a shell
+    
+}
+
+void trata_SIGTSTP(int signum){ //parar somente os descentes da shell, ela nao
+
 }
