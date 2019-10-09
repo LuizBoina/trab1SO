@@ -1,6 +1,7 @@
 #define BACKGROUND 0
 #define FOREGROUND 1
 #define LEADER -1
+#define MOEDA rand() % 2
 #include <sys/types.h>
 #include <sys/wait.h> 
 #include <unistd.h>
@@ -9,13 +10,14 @@
 #include "gsh.h"
 #include <string.h>
 
+
 void imprimePrompt(){
     printf("\nghs>");
 }
 
 Lista* leLinha(){
     Lista* comandos = NULL;
-    char linha[400];
+    char linha[500];
     imprimePrompt();
     scanf("%[^\n]%*c", linha);
     char *comando = strtok(linha, "#");
@@ -49,7 +51,7 @@ pid_t criaProcessos(Lista* comandos){
     return groupid;
 }
 
-pid_t criaProcesso(char* comando, int tipo, int groupid){ //checar se necessita de retorno
+pid_t criaProcesso(char* comando, int tipo, int groupid){
     char* args[5]; //nome do executável mais três argumentos (no máximo) e NULL
     int i = 0;
     char* split = strtok(comando, " ");
@@ -58,9 +60,8 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){ //checar se necessita 
         split = strtok(NULL, " ");
     }
     args[i] = NULL;
-    int moeda = rand() % 2; //se moeda = 0 não cria ghost caso contrário, cria
     pid_t pid;
-    if((pid = fork()) < 0)
+    if((pid = fork()) < 0) //como tratar todos os sinais que um processo recebe para matar todo o grupo
         printf("erro fork() comando: %s\n", comando);
     if(pid == 0){
         if(groupid == LEADER) {
@@ -71,12 +72,12 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){ //checar se necessita 
             setpgid(getpid(), groupid);
             printf("MEU PID = %d, PID DO GRUPO = %d\n", getpid(), getpgrp());
         }
-        if(moeda) {
-            fork();
+        if(MOEDA) { //moeda pode ser 0 ou 1, se moeda == 1 cria ghost, caso contrario, nao cria
+            fork(); //como saber se é fhost (trata_SIGINT)
             printf("ghost criado\n");
         }
         if(execvp(args[0], args) == -1){
-            printf("erro ao executar o comando: %s", comando);
+            printf("erro ao executar o comando: %s\n", comando);
             return -1;
         }
     }

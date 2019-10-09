@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 struct lista{
-    char comando[100];
+    char comando[150];
     Lista* prox;
 };
 
