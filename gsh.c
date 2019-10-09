@@ -26,28 +26,27 @@ Lista* leLinha(){
     return comandos;
 }
 
-int criaProcessos(Lista* comandos){
+pid_t criaProcessos(Lista* comandos){
+    if(comandos == NULL)
+        return -1;
     int cont = 0;
-    pid_t *groupid; //vetor com Ids dos grupos 
-    
+    pid_t groupid;
     if(tamLista(comandos) == 1){
         char* comando = pegaPrimeiro(comandos);
-        criaProcesso(comando, FOREGROUND, LEADER);
-        comandos = removePrimeiro(comandos);
-        
+        groupid = criaProcesso(comando, FOREGROUND, LEADER);
+        removePrimeiro(comandos);
     }
     else{
         while(comandos != NULL){
             char* comando = pegaPrimeiro(comandos);
-            if (cont++ == 0) {
+            if (cont++ == 0)
                 groupid = criaProcesso(comando, BACKGROUND, LEADER);
-            }
-            else {
+            else
                 criaProcesso(comando, BACKGROUND, groupid);
-            }
             comandos = removePrimeiro(comandos);
         }
     }
+    return groupid;
 }
 
 pid_t criaProcesso(char* comando, int tipo, int groupid){ //checar se necessita de retorno
@@ -60,7 +59,7 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){ //checar se necessita 
     }
     args[i] = NULL;
     int moeda = rand() % 2; //se moeda = 0 não cria ghost caso contrário, cria
-    pid_t pid, pid_ghost;
+    pid_t pid;
     if((pid = fork()) < 0)
         printf("erro fork() comando: %s\n", comando);
     if(pid == 0){
@@ -72,12 +71,14 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){ //checar se necessita 
             setpgid(getpid(), groupid);
             printf("MEU PID = %d, PID DO GRUPO = %d\n", getpid(), getpgrp());
         }
-        if(moeda == 1) {
-            pid_ghost = fork();
+        if(moeda) {
+            fork();
             printf("ghost criado\n");
         }
-        if(execvp(args[0], args) == -1)
+        if(execvp(args[0], args) == -1){
             printf("erro ao executar o comando: %s", comando);
+            return -1;
+        }
     }
     else{
         if(tipo == FOREGROUND){ //travar o terminal até o filho morrer ou ser suspenso
@@ -88,10 +89,15 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){ //checar se necessita 
             }
         }
     }
-    if(groupid == -1) {
+    if(groupid == LEADER) {
         groupid = pid;
     }
     return groupid;
+}
+
+void setaSinais(){
+    signal(SIGINT, trata_SIGINT);
+    signal(SIGTSTP, trata_SIGTSTP);
 }
 
 void trata_SIGINT(int signum){ //se tiver descendentes vivo pergunta se realmente quer fechar, se nao fecha a shell
