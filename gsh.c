@@ -9,7 +9,8 @@
 #include <stdlib.h>
 #include "gsh.h"
 #include <string.h>
-
+#define TAM_PGIDS 200
+extern pid_t *pgids;
 
 void imprimePrompt(){
     printf("\nghs>");
@@ -19,7 +20,8 @@ Lista* leLinha(){
     Lista* comandos = NULL;
     char linha[500];
     imprimePrompt();
-    scanf("%[^\n]%*c", linha);
+    scanf("%[^\n]", linha);
+    scanf("%*c");
     char *comando = strtok(linha, "#");
     while(comando!= NULL){
         comandos = insereLista(comandos, comando);
@@ -102,9 +104,27 @@ void setaSinais(){
 }
 
 void trata_SIGINT(int signum){ //se tiver descendentes vivo pergunta se realmente quer fechar, se nao fecha a shell
-    
+    if(existeGrupo()) {
+        char resposta;
+        printf("Digite Y para fechar a shell ou qualquer coisa para cancelar");
+        scanf("%c", &resposta);
+        scanf("%*c");
+        if (resposta != "Y" || resposta != "y")
+            return;
+    }
+    if(kill(getpgrp(), SIGKILL) == -1)
+        perror("Falha ao matar o shell");
 }
 
 void trata_SIGTSTP(int signum){ //parar somente os descentes da shell, ela nao
 
+}
+
+int existeGrupo(){
+    int count = 0;
+    for(int i = 0; TAM_PGIDS>i;i++){
+        if(pgids[i] == 0)
+            count++;
+    }
+    count == TAM_PGIDS ? 1 : 0;
 }

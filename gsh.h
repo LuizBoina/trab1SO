@@ -10,4 +10,5 @@ pid_t criaProcesso(char* comando, int tipo, int groupid);
 void setaSinais();
 void trata_SIGINT(int signum);
 void trata_SIGTSTP(int signum);
+int existeGrupo();
 #endif /* GSH_H */
