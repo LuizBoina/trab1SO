@@ -16,10 +16,12 @@ Lista* insereLista(Lista* comandos, char* comando){
 }
 
 void imprimeLista(Lista* comandos){
+    printf("\nimprimeLista");
     while(comandos != NULL){
-        printf("\n%s", comandos->comando);
+        printf("\ncomando: %s", comandos->comando);
         comandos = comandos->prox;
     }
+    printf("\n");
 }
 
 int tamLista(Lista* comandos){

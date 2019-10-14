@@ -7,13 +7,13 @@ extern int pgids_tam;
 int main() {
     Lista* comandos;
     inicializaVetPgids();
-    printaPgid();
-    //setaSinais();
+    setaSinais();
     while(1){ //tratar entrads (somente enter e comandos inexistentes)
         comandos = leLinha();
         pid_t pgid = criaProcessos(comandos);
         if(pgid != -1) {
-            insereVetPgids(pgids, pgid);
+            insereVetPgids(pgid);
+            printaPgid();
         }
     }
 }

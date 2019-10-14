@@ -14,12 +14,14 @@ extern pid_t pgids[];
 extern int pgids_tam;
 
 void imprimePrompt(){
-    printf("\nghs>");
+    printf("ghs>");
 }
 
 Lista* leLinha(){
     Lista* comandos = NULL;
     char linha[500];
+    for(int i = 0; 500> i;i++)
+        linha[i] = '\0';
     imprimePrompt();
     scanf("%[^\n]", linha);
     scanf("%*c");
@@ -64,11 +66,14 @@ pid_t criaProcessos(Lista* comandos){
 pid_t criaProcesso(char* comando, int tipo, int groupid){
     char* args[5]; //nome do executável mais três argumentos (no máximo) e NULL
     int i = 0;
+    pid_t pgid = 0;
     char* split = strtok(comando, " ");
     while(split != NULL){
         args[i++] = split;
         split = strtok(NULL, " ");
     }
+    if(args[0] == NULL)
+        return -1;
     args[i] = NULL;
     pid_t pid;
     if((pid = fork()) < 0) //como tratar todos os sinais que um processo recebe para matar todo o grupo
@@ -97,7 +102,13 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){
     else{
         if(tipo == FOREGROUND){ //travar o terminal até o filho morrer ou ser suspenso
             int status;
+
+            int pgid = getpgid(pid);
+            printf("------pid: %d--------pgid: %d------------", pid, pgid);
             waitpid(pid, &status, WUNTRACED);
+            printaPgid();
+            removePgid(pgid);
+            printaPgid();
             if(status){
 
             }
@@ -116,7 +127,7 @@ void setaSinais(){
 
 void trata_SIGINT(int signum){ //se tiver descendentes vivo pergunta se realmente quer fechar, se nao fecha a shell
     printf("\nFoi Capturado um Ctrl+C (SIGINT)\n");
-    if(!VetVazio(pgids)) {
+    if(VetVazio()) {
         char resposta[50];
         printf("Digite Y para fechar a shell ou qualquer coisa para cancelar: ");
         scanf("%s", resposta);
