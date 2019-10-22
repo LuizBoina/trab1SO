@@ -10,6 +10,8 @@
 #include "gsh.h"
 #include <string.h>
 #include <time.h>
+#include <signal.h>
+
 extern pid_t pgids[];
 extern int pgids_tam;
 
@@ -78,21 +80,24 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){
     pid_t pid;
     if((pid = fork()) < 0) //como tratar todos os sinais que um processo recebe para matar todo o grupo
         printf("erro fork() comando: %s\n", comando);
-    if(pid == 0){
+    if(pid == 0){ /* processo filho */
         if(groupid == LEADER) {
             setpgrp();
             printf("MEU PID = %d, PID DO GRUPO = %d\n", getpid(), getpgrp());
         }
-        else {
+        else { /* processo pai */
             setpgid(getpid(), groupid);
             printf("MEU PID = %d, PID DO GRUPO = %d\n", getpid(), getpgrp());
         }
-        srand(time(NULL)); //pega o horário como semente da função rand()
         int moeda = rand() % 2; //os processos estão com a mesma moeda
         printf("moeda: %d\n", moeda);
         if(moeda) { //moeda pode ser 0 ou 1, se moeda == 1 cria ghost, caso contrario, nao cria
             printf("ghost criado\n");
-            fork(); //como saber se é fhost (trata_SIGINT)
+            pid_t pid2;
+            pid2 = fork(); //como saber se é fhost (trata_SIGINT)
+            if(pid2 == 0){
+                printf("GHOST === MEU PID = %d, PID DO GRUPO = %d\n", getpid(), getpgrp());
+            }
         }
         if(execvp(args[0], args) == -1){
             printf("erro ao executar o comando: %s\n", comando);
@@ -104,7 +109,7 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){
             int status;
 
             int pgid = getpgid(pid);
-            printf("------pid: %d--------pgid: %d------------", pid, pgid);
+            //printf("------pid: %d--------pgid: %d------------", pid, pgid);
             waitpid(pid, &status, WUNTRACED);
             printaPgid();
             removePgid(pgid);
@@ -123,9 +128,15 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){
 void setaSinais(){
     signal(SIGINT, trata_SIGINT);
     signal(SIGTSTP, trata_SIGTSTP);
+    signal(SIGCHLD, trata_SIGCHLD);
 }
 
-void trata_SIGINT(int signum){ //se tiver descendentes vivo pergunta se realmente quer fechar, se nao fecha a shell
+void trata_SIGINT(int signum){
+    sigset_t mask;
+    sigset_t oldset;
+    sigfillset(&mask);
+    sigemptyset(&oldset);
+    sigprocmask(SIG_SETMASK, &mask, NULL);
     printf("\nFoi Capturado um Ctrl+C (SIGINT)\n");
     if(VetVazio()) {
         char resposta[50];
@@ -140,6 +151,7 @@ void trata_SIGINT(int signum){ //se tiver descendentes vivo pergunta se realment
         if(kill(getpgrp(), SIGKILL) == -1)
             perror("Falha ao matar o shell");
     }
+    sigprocmask(SIG_SETMASK, &oldset, NULL);
 }
 
 void trata_SIGTSTP(int signum){ //parar somente os descentes da shell, ela nao
@@ -151,6 +163,13 @@ void trata_SIGTSTP(int signum){ //parar somente os descentes da shell, ela nao
         }
     }
 
+}
+
+void trata_SIGCHLD(int signum){
+    int status;
+    pid_t pid;
+    pid = waitpid(-1, &status, WNOHANG);
+    printf("\n-----------RECEBEU SIGCHLD  %d-------------\n", pid);
 }
 
 void operacaoInterna(char* comando) {

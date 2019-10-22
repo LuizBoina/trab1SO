@@ -11,5 +11,6 @@ pid_t criaProcesso(char* comando, int tipo, int groupid);
 void setaSinais();
 void trata_SIGINT(int signum);
 void trata_SIGTSTP(int signum);
+void trata_SIGCHLD(int signum);
 void operacaoInterna(char* comando);
 #endif /* GSH_H */
