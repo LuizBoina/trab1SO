@@ -6,7 +6,7 @@
 
 void imprimePrompt();
 Lista* leLinha();
-pid_t criaProcessos(Lista* comandos);
+void criaProcessos(Lista* comandos);
 pid_t criaProcesso(char* comando, int tipo, int groupid);
 void setaSinais();
 void trata_SIGINT(int signum);
