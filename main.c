@@ -1,25 +1,13 @@
 #include "gsh.h"
 #include "lista.h"
-#define TAM_PGIDS 200
-pid_t pgids[TAM_PGIDS]; //checar se precisa realocar
-
-void inicializaVetpgids(pid_t *pgids);
+#include "vet.h"
 
 int main() {
     Lista* comandos;
-    inicializaVetpgids(pgids);
+    inicializaVetPgids();
     setaSinais();
-    int i = 0;
-    while(1){ //tratar entrads (somente enter e comandos inexistentes)
+    while(1){
         comandos = leLinha();
-        pid_t pgid = criaProcessos(comandos);
-        if(pgid != -1) {
-            pgids[i++] = pgid;
-        }
-            
+        criaProcessos(comandos);
     }
-}
-
-void inicializaVetpgids(pid_t *pgids) {
-    for(int i = 0;TAM_PGIDS>i;i++, pgids[i] = 0);
 }
