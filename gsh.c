@@ -171,7 +171,6 @@ void trata_SIGTSTP(int signum){ //parar somente os descentes da shell, ela nao
             kill(pid, SIGTSTP);
         }
     }
-
 }
 
 void trata_SIGCHLD(int signum){
@@ -187,7 +186,6 @@ void trata_SIGCHLD(int signum){
     if(pid != -1)
         removePid(pid);
 }
-
 void operacaoInterna(char* comando) {
     if(!strcmp(comando,"mywait")) {
         printf("Executando o My Wait...\n");
@@ -206,6 +204,7 @@ void operacaoInterna(char* comando) {
             if(_pgid[0] != 0) {
                 printf("Matando o Processo i = %d, PID = %d, PGID = %d\n", i, _pgid[0], _pgid[1]);
                 if(kill(-_pgid[1], SIGKILL) == -1)
+
                     perror("Falha ao matar um grupo");
             }
         }
