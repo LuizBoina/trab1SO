@@ -20,6 +20,7 @@ void imprimePrompt(){
     printf("gsh>");
 }
 
+//Lê comandos digitados pelo usuário e os armazena em uma lista.
 Lista* leLinha(){
     Lista* comandos = NULL;
     char linha[500];
@@ -43,25 +44,25 @@ void criaProcessos(Lista* comandos){
         return;
     int cont = 0;
     pid_t pgid;
-    if(tamLista(comandos) == 1){
+    if(tamLista(comandos) == 1){ //Se for passado apenas um comando.
         char* comando = pegaPrimeiro(comandos);
-        if(!strcmp(comando,"mywait") || !strcmp(comando,"clean&die")) {
+        if(!strcmp(comando,"mywait") || !strcmp(comando,"clean&die")) { //Trata mywait e clean&die (operação interna da shell, não é necessario fork)
             operacaoInterna(comando);
             return;
         }
         pgid = criaProcesso(comando, FOREGROUND, LEADER);
         removePrimeiro(comandos);
     }
-    else{
+    else{ //Se for passada uma lista de comandos.
         while(comandos != NULL){
             char* comando = pegaPrimeiro(comandos);
-            if (cont++ == 0) {
+            if (cont++ == 0) { //Primeiro comando da lista. O PID desse comando vai ser o PGID dos processos do conjunto.
                 pgid = criaProcesso(comando, BACKGROUND, LEADER);
                 //impede que os outros processos sejam executados antes de criar o grupo
                 //sleep(5);
                 //nanosleep((const struct timespec[]){{0, 999999999L}}, NULL);
             }
-            else
+            else //Otros processos do grupo que receberão o PID do primeiro processo como seu PGID.
                 criaProcesso(comando, BACKGROUND, pgid);
             comandos = removePrimeiro(comandos);
             srand(rand());
@@ -85,17 +86,19 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){
     pid_t pid;
     if((pid = fork()) < 0) 
         printf("erro fork() comando: %s\n", comando);
-    if(pid == 0){ /* processo filho */
-        if(groupid == LEADER) {
-            setpgrp();
+    else if(pid == 0){ //Processo filho.
+        if(groupid == LEADER) { //Se for o primeiro processo do conjunto.
+            setpgrp(); //Cria grupo com seu PID.
             printf("SOU O LIDER! COMANDO: %s, MEU PID = %d, PID DO GRUPO = %d\n", comando, getpid(), getpgrp());
+            printf("PPID: %d\n", getppid());
+            kill(getppid(), SIGCONT);
         }
-        else { /* processo pai */
-            if((setpgid(getpid(), getpgrp())) == -1)
+        else { //Se não for o primeiro processo. Vai trocar o seu PGID para o PID do primeiro processo do conjunto.
+            if((setpgid(getpid(), groupid)) == -1)
                 perror("setpgid() error:");
             printf("COMANDO: %s, MEU PID = %d, PID DO GRUPO = %d\n", comando, getpid(), getpgrp());
         }
-        if(moeda) {
+        if(moeda) { //Se for para criar um ghost.
             printf("ghost criado\n");
             pid_t pid2;
             pid2 = fork();
@@ -109,18 +112,19 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){
             return groupid;
         }
     }
-    else{
+    else{ //Processo pai.
         if(groupid == LEADER) {
+            pause();
             groupid = pid;
-            int time = sleep(20);
-            printf("\nTEMPO RESTANTE DO SLEEP: %d\n", time);
+            //int time = sleep(1);
+            //printf("\nTEMPO RESTANTE DO SLEEP: %d\n", time);
         }
-        insereVetPgids(pid, groupid, 0);
+        insereVetPgids(pid, groupid, moeda); //Insere o processo criado na matriz de processos.
         if(tipo == FOREGROUND){
             int status;
             //printaPgid();
             waitpid(pid, &status, WUNTRACED);
-            if(status > 0 && status != 5503){
+            if(WIFSIGNALED(status)){ //Filho foi morto por um sinal.
                 pid_t pgid = pegaPgid(pid);
                 mataGrupo(pgid);
             }
@@ -136,6 +140,7 @@ void setaSinais(){
     signal(SIGINT, trata_SIGINT);
     signal(SIGTSTP, trata_SIGTSTP);
     signal(SIGCHLD, trata_SIGCHLD);
+    signal(SIGCONT, trata_SIGCONT);
 }
 
 void trata_SIGINT(int signum){
@@ -163,14 +168,15 @@ void trata_SIGINT(int signum){
 
 void trata_SIGTSTP(int signum){ //parar somente os descentes da shell, ela nao
     printf("\nFoi Capturado um Ctrl+Z (SIGTSTP)\n");
-    int i;
-    for(i = 0; i < pgids_tam; i++) {
-        pid_t pid = retornaIndex(i)[0];
-        if(pid != 0) {
-            printf("pgids[i][0]: %d\n", pid);
-            kill(pid, SIGTSTP);
+    for(int i = 0; i < pgids_tam; i++) {
+        pid_t* pid = retornaIndex(i);
+        if(pid[0] != 0) {
+            printf("Suspendendo o grupo: PGID %d\n", pid[1]);
+            if(kill(-pid[1], SIGTSTP) == -1)
+                perror("Falha ao suspender");
         }
     }
+
 }
 
 void trata_SIGCHLD(int signum){
@@ -179,18 +185,23 @@ void trata_SIGCHLD(int signum){
     pid_t pid;
     pid = waitpid(-1, &status, WNOHANG);
     printf("\n-----------RECEBEU SIGCHLD  %d-------------\n", pid);
-    if(status > 0){
+    if(WIFSIGNALED(status)){
         pid_t pgid = pegaPgid(pid);
         mataGrupo(pgid);
     }
     if(pid != -1)
         removePid(pid);
 }
+
+void trata_SIGCONT(int signum) {
+    printf("SHELL DESBLOQUEDA\n");
+}
+
 void operacaoInterna(char* comando) {
     if(!strcmp(comando,"mywait")) {
         printf("Executando o My Wait...\n");
-        pid_t pid = 0;
-        while ((pid = waitpid(-1, NULL, WNOHANG)) != -1) {
+        pid_t pid;
+        while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
             printf("Liberei o zumbi PID = %d\n", pid);
         }
         printf("Liberei todos os zumbis\n");
@@ -204,7 +215,6 @@ void operacaoInterna(char* comando) {
             if(_pgid[0] != 0) {
                 printf("Matando o Processo i = %d, PID = %d, PGID = %d\n", i, _pgid[0], _pgid[1]);
                 if(kill(-_pgid[1], SIGKILL) == -1)
-
                     perror("Falha ao matar um grupo");
             }
         }
