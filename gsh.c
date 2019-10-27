@@ -58,7 +58,8 @@ void criaProcessos(Lista* comandos){
             if (cont++ == 0) {
                 pgid = criaProcesso(comando, BACKGROUND, LEADER);
                 //impede que os outros processos sejam executados antes de criar o grupo
-                nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
+                //sleep(5);
+                //nanosleep((const struct timespec[]){{0, 999999999L}}, NULL);
             }
             else
                 criaProcesso(comando, BACKGROUND, pgid);
@@ -66,7 +67,7 @@ void criaProcessos(Lista* comandos){
             srand(rand());
         }
     }
-    printf("----- groupid = %d", pgid);
+    //printf("----- groupid = %d", pgid);
 }
 
 pid_t criaProcesso(char* comando, int tipo, int groupid){
@@ -82,36 +83,42 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){
         return -1;
     args[i] = NULL;
     pid_t pid;
-    if((pid = fork()) < 0) //como tratar todos os sinais que um processo recebe para matar todo o grupo
+    if((pid = fork()) < 0) 
         printf("erro fork() comando: %s\n", comando);
     if(pid == 0){ /* processo filho */
         if(groupid == LEADER) {
             setpgrp();
-            printf("MEU PID = %d, PID DO GRUPO = %d\n", getpid(), getpgrp());
+            printf("SOU O LIDER! COMANDO: %s, MEU PID = %d, PID DO GRUPO = %d\n", comando, getpid(), getpgrp());
         }
         else { /* processo pai */
-            setpgid(getpid(), groupid);
-            printf("MEU PID = %d, PID DO GRUPO = %d\n", getpid(), getpgrp());
+            if((setpgid(getpid(), getpgrp())) == -1)
+                perror("setpgid() error:");
+            printf("COMANDO: %s, MEU PID = %d, PID DO GRUPO = %d\n", comando, getpid(), getpgrp());
         }
         if(moeda) {
             printf("ghost criado\n");
             pid_t pid2;
             pid2 = fork();
             if(pid2 == 0){
-                printf("GHOST === MEU PID = %d, PID DO GRUPO = %d\n", getpid(), getpgrp());
+                printf("GHOST === COMANDO: %s, MEU PID = %d, PID DO GRUPO = %d\n", comando, getpid(), getpgrp());
             }
         }
-        signal(SIGINT, SIG_IGN);
+        //signal(SIGINT, SIG_IGN);
         if(execvp(args[0], args) == -1){
             printf("\nerro ao criar comando: %s",comando);
-            return -1;
+            return groupid;
         }
     }
     else{
-        insereVetPgids(pid, pid, 0);
+        if(groupid == LEADER) {
+            groupid = pid;
+            int time = sleep(20);
+            printf("\nTEMPO RESTANTE DO SLEEP: %d\n", time);
+        }
+        insereVetPgids(pid, groupid, 0);
         if(tipo == FOREGROUND){
             int status;
-            printaPgid();
+            //printaPgid();
             waitpid(pid, &status, WUNTRACED);
             if(status > 0 && status != 5503){
                 pid_t pgid = pegaPgid(pid);
@@ -120,11 +127,7 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){
             else
                 removePid(pid);
             //if(status == 5503)
-            return -1;
         }
-    }
-    if(groupid == LEADER) {
-        groupid = pid;
     }
     return groupid;
 }
@@ -168,11 +171,10 @@ void trata_SIGTSTP(int signum){ //parar somente os descentes da shell, ela nao
             kill(pid, SIGTSTP);
         }
     }
-
 }
 
 void trata_SIGCHLD(int signum){
-    printaPgid();
+    //printaPgid();
     int status;
     pid_t pid;
     pid = waitpid(-1, &status, WNOHANG);
@@ -184,7 +186,6 @@ void trata_SIGCHLD(int signum){
     if(pid != -1)
         removePid(pid);
 }
-
 void operacaoInterna(char* comando) {
     if(!strcmp(comando,"mywait")) {
         printf("Executando o My Wait...\n");
@@ -197,12 +198,13 @@ void operacaoInterna(char* comando) {
     }
     else { // clean&die
         printf("Executando o Clean & Die...\n");
-        int i;
-        for(i = 0; i < pgids_tam; i++) {
+        printaPgid();
+        for(int i = 0; i < pgids_tam; i++) {
             pid_t* _pgid = retornaIndex(i);
             if(_pgid[0] != 0) {
-                printf("Matando o grupo i = %d, PGID = %d\n", i, _pgid[0]);
-                if(kill(_pgid[0], SIGKILL) == -1)
+                printf("Matando o Processo i = %d, PID = %d, PGID = %d\n", i, _pgid[0], _pgid[1]);
+                if(kill(-_pgid[1], SIGKILL) == -1)
+
                     perror("Falha ao matar um grupo");
             }
         }

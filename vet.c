@@ -55,13 +55,12 @@ int checaVetSIGINT(){
 }
 
 void printaPgid() {
-    printf("\nentro printf\n");
-        for (int i = 0; pgids_tam > i; i++) {
-            printf("%d ", pgids[i][0]);
-            printf("%d ", pgids[i][1]);
-            printf("%d", pgids[i][2]);
-            printf("\n");
-        }
+    for (int i = 0; pgids_tam > i; i++) {
+        printf("%d ", pgids[i][0]);
+        printf("%d ", pgids[i][1]);
+        printf("%d", pgids[i][2]);
+        printf("\n");
+    }
     printf("\n");
 }
 
