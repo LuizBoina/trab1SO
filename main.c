@@ -1,15 +1,13 @@
 #include "gsh.h"
 #include "lista.h"
+#include "vet.h"
 
 int main() {
     Lista* comandos;
-    pid_t pgids[200]; //checar se precisa realocar
+    inicializaVetPgids();
     setaSinais();
-    int i = 0;
-    while(1){ //tratar entrads (somente enter e comandos inexistentes)
+    while(1){
         comandos = leLinha();
-        pid_t pgid = criaProcessos(comandos);
-        if(pgid != -1)
-            pgids[i++] = pgid;
+        criaProcessos(comandos);
     }
 }
