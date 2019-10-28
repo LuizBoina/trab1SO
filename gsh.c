@@ -42,27 +42,27 @@ void criaProcessos(Lista* comandos){
     srand(seed);
     if(comandos == NULL)
         return;
-    int cont = 0;
+    int temLider = 0;
     pid_t pgid;
     if(tamLista(comandos) == 1){ //Se for passado apenas um comando.
         char* comando = pegaPrimeiro(comandos);
         if(!strcmp(comando,"mywait") || !strcmp(comando,"clean&die")) { //Trata mywait e clean&die (operação interna da shell, não é necessario fork)
             operacaoInterna(comando);
-            return;
         }
-        pgid = criaProcesso(comando, FOREGROUND, LEADER);
+        else
+            pgid = criaProcesso(comando, FOREGROUND, LEADER);
         removePrimeiro(comandos);
     }
     else{ //Se for passada uma lista de comandos.
         while(comandos != NULL){
             char* comando = pegaPrimeiro(comandos);
-            if (cont++ == 0) { //Primeiro comando da lista. O PID desse comando vai ser o PGID dos processos do conjunto.
+            if (temLider++ == 0) { //Primeiro comando da lista. O PID desse comando vai ser o PGID dos processos do conjunto.
                 pgid = criaProcesso(comando, BACKGROUND, LEADER);
                 //impede que os outros processos sejam executados antes de criar o grupo
                 //sleep(5);
                 //nanosleep((const struct timespec[]){{0, 999999999L}}, NULL);
             }
-            else //Otros processos do grupo que receberão o PID do primeiro processo como seu PGID.
+            else //Outros processos do grupo que receberão o PID do primeiro processo como seu PGID.
                 criaProcesso(comando, BACKGROUND, pgid);
             comandos = removePrimeiro(comandos);
             srand(rand());
@@ -106,7 +106,7 @@ pid_t criaProcesso(char* comando, int tipo, int groupid){
                 printf("GHOST === COMANDO: %s, MEU PID = %d, PID DO GRUPO = %d\n", comando, getpid(), getpgrp());
             }
         }
-        //signal(SIGINT, SIG_IGN);
+        signal(SIGINT, SIG_IGN);
         if(execvp(args[0], args) == -1){
             printf("\nerro ao criar comando: %s",comando);
             return groupid;
@@ -183,14 +183,17 @@ void trata_SIGCHLD(int signum){
     //printaPgid();
     int status;
     pid_t pid;
-    pid = waitpid(-1, &status, WNOHANG);
-    printf("\n-----------RECEBEU SIGCHLD  %d-------------\n", pid);
-    if(WIFSIGNALED(status)){
-        pid_t pgid = pegaPgid(pid);
-        mataGrupo(pgid);
+    if((pid = waitpid(-1, &status, WNOHANG)) > 0) { //pid tem o velor de um processo.
+        printf("\n-----------RECEBEU SIGCHLD  %d-------------\n", pid);
+        if(WIFSIGNALED(status)){ //se o processo recebeu algum sinal.
+            if(status != 20) { //se o processo não foi suspenso (SIGTSTP).
+                pid_t pgid = pegaPgid(pid);
+                mataGrupo(pgid);
+            }
+        }
     }
-    if(pid != -1)
-        removePid(pid);
+//    if(pid != -1)
+//        removePid(pid);
 }
 
 void trata_SIGCONT(int signum) {
@@ -219,7 +222,7 @@ void operacaoInterna(char* comando) {
             }
         }
         printf("Agora vou me matar...\n");
-        if(kill(getpgrp(), SIGKILL) == -1)
+        if(kill(-getpgrp(), SIGKILL) == -1)
             perror("Falha ao matar a shell");
     }
 }
