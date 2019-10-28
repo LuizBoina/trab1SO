@@ -3,11 +3,11 @@
 #include "vet.h"
 
 int main() {
-    Lista* comandos;
-    inicializaVetPgids();
-    setaSinais();
+    Lista* comandos; //Lista para armazenar comandos digitados pelo usuário.
+    inicializaVetPgids(); //Matriz que armazena informações sobre os processos criados.
+    setaSinais(); //Tratamento de sainais.
     while(1){
-        comandos = leLinha();
-        criaProcessos(comandos);
+        comandos = leLinha(); //Lê comandos digitados pelo usuário.
+        criaProcessos(comandos); //Cria os processos especificados pelo usuário.
     }
 }

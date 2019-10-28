@@ -48,7 +48,7 @@ void realocaVetor() {
 int checaVetSIGINT(){
     int i;
     for(i = 0; pgids_tam > i; i++){
-        if(pgids[i][0] != 0 || pgids[i][2] == 1)
+        if(pgids[i][0] != 0 && pgids[i][0] != -1)
             return 0;
     }
     return 1;
@@ -67,9 +67,14 @@ void printaPgid() {
 void removePid(int pgid){
     for(int i = 0; pgids_tam>i; i++){
         if(pgids[i][0] == pgid){
-            pgids[i][0] = 0;
-            pgids[i][1] = 0;
-            pgids[i][2] = 0;
+            if(pgids[i][2] == 1) {
+                pgids[i][0] = -1;
+            }
+            else {
+                pgids[i][0] = 0;
+                pgids[i][1] = 0;
+                pgids[i][2] = 0;                
+            }
             break;
         }
     }
