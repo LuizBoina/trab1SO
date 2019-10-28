@@ -3,10 +3,16 @@
 
 typedef struct lista Lista;
 
-Lista* insereLista(Lista* comandos, char* comando);
-void imprimeLista(Lista* comandos);
-int tamLista(Lista* comandos);
-char* pegaPrimeiro(Lista* comandos);
-Lista* removePrimeiro(Lista* comandos);
+//insere comando na lista
+Lista *insereLista(Lista *comandos, char *comando);
+
+//retorna o tamanho da lista
+int tamLista(Lista *comandos);
+
+//retorna o primeiro elemento da lista
+char *pegaPrimeiro(Lista *comandos);
+
+//retira o primeiro elemento da lista
+Lista *removePrimeiro(Lista *comandos);
 
 #endif //TRAB1SO_LISTA_H
